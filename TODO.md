@@ -21,9 +21,9 @@
 - [x] RBAC `authorize` middleware
 - [x] Structured JSON logger (`logger.ts`)
 - [x] `correlationId` middleware
-- [ ] **Wire `correlationId` middleware into `index.ts` pipeline** ← missing from main stack
-- [ ] Upgrade rate limiting from IP-based → per-user for authenticated routes
-- [ ] Add per-socket emit rate limiting (Socket.IO flood protection)
+- [x] **Wire `correlationId` middleware into `index.ts` pipeline** ← missing from main stack
+- [x] Upgrade rate limiting from IP-based → per-user for authenticated routes
+- [x] Add per-socket emit rate limiting (Socket.IO flood protection)
 
 ### 1.2 Security Gaps
 - [ ] Add `Content-Security-Policy` (CSP) header (strict mode + Three.js canvas nonce)

@@ -6,7 +6,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./lib/db/client";
 import { errorHandler } from "./middleware/error-handler";
-import { publicRateLimit } from "./middleware/rate-limit";
+import { publicRateLimit, applySocketRateLimit } from "./middleware/rate-limit";
 import { correlationId } from "./middleware/correlation-id";
 import { logger } from "./lib/utils/logger";
 import { generateToken } from "./lib/auth/jwt";
@@ -87,6 +87,7 @@ app.use("/api", shotRoutes);     // Hybrid: /api/sequences/:sequenceId/shots + /
 // ─── Socket.IO Namespaces ───
 const studioNamespace = io.of("/studio");
 studioNamespace.on("connection", (socket) => {
+  applySocketRateLimit(socket, { limit: 60, windowMs: 10_000 }); // 60 events / 10s per socket
   logger.info("Socket connected", { namespace: "/studio", socketId: socket.id });
   socket.on("disconnect", () => {
     logger.info("Socket disconnected", { namespace: "/studio", socketId: socket.id });
