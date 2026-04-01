@@ -52,4 +52,5 @@ export interface AuthenticatedRequest extends Request {
     orgId: string;
     role: string;
   };
+  correlationId?: string;
 }

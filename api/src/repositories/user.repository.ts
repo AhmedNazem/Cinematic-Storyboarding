@@ -50,9 +50,10 @@ export async function update(
   });
 }
 
-/** Remove user from organization */
+/** Soft-delete user — sets deletedAt instead of removing */
 export async function remove(id: string, orgId: string) {
-  return prisma.user.delete({
+  return prisma.user.update({
     where: { id, orgId },
+    data: { deletedAt: new Date() },
   });
 }

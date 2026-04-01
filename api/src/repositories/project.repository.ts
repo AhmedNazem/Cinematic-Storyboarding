@@ -5,11 +5,7 @@ import {
 } from "../schemas/project.schema";
 
 /** Find paginated projects for an organization */
-export async function findByOrg(
-  orgId: string,
-  skip: number,
-  take: number,
-) {
+export async function findByOrg(orgId: string, skip: number, take: number) {
   const [data, total] = await Promise.all([
     prisma.project.findMany({
       where: { orgId },
@@ -56,9 +52,10 @@ export async function update(
   });
 }
 
-/** Delete project */
+/** Soft-delete project — sets deletedAt instead of removing */
 export async function remove(id: string, orgId: string) {
-  return prisma.project.delete({
+  return prisma.project.update({
     where: { id, orgId },
+    data: { deletedAt: new Date() },
   });
 }

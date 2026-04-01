@@ -1,4 +1,6 @@
 import * as projectRepo from "../repositories/project.repository";
+import * as seqRepo from "../repositories/sequence.repository";
+import * as shotRepo from "../repositories/shot.repository";
 import {
   CreateProjectInput,
   UpdateProjectInput,
@@ -58,12 +60,20 @@ export async function updateProject(
   return projectRepo.update(id, orgId, data);
 }
 
-/** Delete project — verifies ownership */
+/** Soft-delete project + cascade to child sequences and shots */
 export async function deleteProject(id: string, orgId: string) {
   const project = await projectRepo.findById(id, orgId);
   if (!project) {
     throw ApiError.notFound("Project");
   }
+
+  // Cascade: soft-delete all shots in all sequences of this project
+  for (const seq of project.sequences) {
+    await shotRepo.softDeleteBySequence(seq.id);
+  }
+
+  // Cascade: soft-delete all sequences in this project
+  await seqRepo.softDeleteByProject(id);
 
   return projectRepo.remove(id, orgId);
 }

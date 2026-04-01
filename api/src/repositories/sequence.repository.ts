@@ -42,10 +42,11 @@ export async function update(id: string, data: UpdateSequenceInput) {
   });
 }
 
-/** Delete sequence */
+/** Soft-delete sequence — sets deletedAt instead of removing */
 export async function remove(id: string) {
-  return prisma.sequence.delete({
+  return prisma.sequence.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 }
 
@@ -61,4 +62,12 @@ export async function verifyOwnership(
     },
   });
   return sequence !== null;
+}
+
+/** Bulk soft-delete all sequences in a project (cascade helper) */
+export async function softDeleteByProject(projectId: string) {
+  return prisma.sequence.updateMany({
+    where: { projectId },
+    data: { deletedAt: new Date() },
+  });
 }

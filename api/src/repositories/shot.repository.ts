@@ -59,10 +59,11 @@ export async function update(id: string, data: UpdateShotInput) {
   });
 }
 
-/** Delete shot */
+/** Soft-delete shot — sets deletedAt instead of removing */
 export async function remove(id: string) {
-  return prisma.shot.delete({
+  return prisma.shot.update({
     where: { id },
+    data: { deletedAt: new Date() },
   });
 }
 
@@ -78,4 +79,12 @@ export async function verifyOwnership(
     },
   });
   return shot !== null;
+}
+
+/** Bulk soft-delete all shots in a sequence (cascade helper) */
+export async function softDeleteBySequence(sequenceId: string) {
+  return prisma.shot.updateMany({
+    where: { sequenceId },
+    data: { deletedAt: new Date() },
+  });
 }
