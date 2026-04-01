@@ -2,12 +2,15 @@ import "dotenv/config";
 import express, { Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./lib/db/client";
 import { errorHandler } from "./middleware/error-handler";
 import { publicRateLimit, applySocketRateLimit } from "./middleware/rate-limit";
 import { correlationId } from "./middleware/correlation-id";
+import { cspWithNonce } from "./middleware/csp";
+import { csrfProtection } from "./middleware/csrf";
 import { logger } from "./lib/utils/logger";
 import { generateToken } from "./lib/auth/jwt";
 
@@ -31,16 +34,29 @@ const io = new Server(httpServer, {
 const PORT = process.env.PORT || 3001;
 
 // ─── Global Middleware (order per AXIOM) ───
-app.use(helmet());
+app.use(
+  helmet({
+    // CSP is handled by cspWithNonce below (nonce must be generated per-request)
+    contentSecurityPolicy: false,
+    hsts: {
+      maxAge: 31_536_000, // 1 year in seconds
+      includeSubDomains: true,
+      preload: true,
+    },
+  }),
+);
 app.use(
   cors({
     origin: process.env.CORS_ORIGIN || "*",
     credentials: true,
   }),
 );
+app.use(cookieParser());
+app.use(cspWithNonce);
 app.use(express.json({ limit: "10mb" }));
 app.use(correlationId);
 app.use(publicRateLimit);
+app.use(csrfProtection);
 
 // ─── Health Checks ───
 app.get("/health/live", (_req: Request, res: Response) => {

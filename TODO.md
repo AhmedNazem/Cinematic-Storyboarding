@@ -26,9 +26,9 @@
 - [x] Add per-socket emit rate limiting (Socket.IO flood protection)
 
 ### 1.2 Security Gaps
-- [ ] Add `Content-Security-Policy` (CSP) header (strict mode + Three.js canvas nonce)
-- [ ] Add CSRF token validation for state-mutating requests
-- [ ] Add HSTS header (`Strict-Transport-Security: includeSubDomains`)
+- [x] Add `Content-Security-Policy` (CSP) header (strict mode + Three.js canvas nonce)
+- [x] Add CSRF token validation for state-mutating requests
+- [x] Add HSTS header (`Strict-Transport-Security: includeSubDomains`)
 - [ ] Validate request payload size per-route (not just global 10MB)
 - [ ] Admin routes: require MFA verification token in addition to JWT
 - [ ] Audit logging: record who changed what and when (append-only log table)
