@@ -7,6 +7,8 @@ import { Server } from "socket.io";
 import { prisma } from "./lib/db/client";
 import { errorHandler } from "./middleware/error-handler";
 import { publicRateLimit } from "./middleware/rate-limit";
+import { correlationId } from "./middleware/correlation-id";
+import { logger } from "./lib/utils/logger";
 import { generateToken } from "./lib/auth/jwt";
 
 // ─── Route Imports ───
@@ -37,6 +39,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: "10mb" }));
+app.use(correlationId);
 app.use(publicRateLimit);
 
 // ─── Health Checks ───
@@ -84,9 +87,9 @@ app.use("/api", shotRoutes);     // Hybrid: /api/sequences/:sequenceId/shots + /
 // ─── Socket.IO Namespaces ───
 const studioNamespace = io.of("/studio");
 studioNamespace.on("connection", (socket) => {
-  console.log("Client connected to /studio namespace");
+  logger.info("Socket connected", { namespace: "/studio", socketId: socket.id });
   socket.on("disconnect", () => {
-    console.log("Client disconnected from /studio");
+    logger.info("Socket disconnected", { namespace: "/studio", socketId: socket.id });
   });
 });
 
@@ -95,14 +98,12 @@ app.use(errorHandler);
 
 // ─── Start Server ───
 httpServer.listen(PORT, async () => {
-  console.log(
-    `[server]: AXIOM BFF Backend is running at http://localhost:${PORT}`,
-  );
+  logger.info("AXIOM BFF Backend started", { port: PORT });
 
   try {
     await prisma.$queryRaw`SELECT 1`;
-    console.log("[database]: ✅ Connected to Neon PostgreSQL");
+    logger.info("Database connected", { provider: "Neon PostgreSQL" });
   } catch (err) {
-    console.error("[database]: ❌ Failed to connect", err);
+    logger.error("Database connection failed", { error: String(err) });
   }
 });
