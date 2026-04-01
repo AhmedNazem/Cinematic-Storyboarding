@@ -8,6 +8,7 @@ import { Server } from "socket.io";
 import { prisma } from "./lib/db/client";
 import { errorHandler } from "./middleware/error-handler";
 import { publicRateLimit, applySocketRateLimit } from "./middleware/rate-limit";
+import { jsonBody, BODY_LIMIT } from "./middleware/body-limit";
 import { correlationId } from "./middleware/correlation-id";
 import { cspWithNonce } from "./middleware/csp";
 import { csrfProtection } from "./middleware/csrf";
@@ -53,7 +54,6 @@ app.use(
 );
 app.use(cookieParser());
 app.use(cspWithNonce);
-app.use(express.json({ limit: "10mb" }));
 app.use(correlationId);
 app.use(publicRateLimit);
 app.use(csrfProtection);
@@ -74,7 +74,7 @@ app.get("/health/ready", async (_req: Request, res: Response) => {
 
 // ─── Dev Token Generator (remove in production) ───
 if (process.env.NODE_ENV !== "production") {
-  app.post("/dev/token", async (req: Request, res: Response) => {
+  app.post("/dev/token", jsonBody(BODY_LIMIT.tiny), async (req: Request, res: Response) => {
     const { userId } = req.body;
     const user = await prisma.user.findUnique({
       where: { id: userId },

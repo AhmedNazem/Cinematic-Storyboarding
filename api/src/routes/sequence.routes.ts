@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
+import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
 import {
   createSequenceSchema,
   updateSequenceSchema,
@@ -24,6 +25,7 @@ router.get("/sequences/:id", seqController.get);
 // POST /api/projects/:projectId/sequences — create in project (editor+)
 router.post(
   "/projects/:projectId/sequences",
+  jsonBody(BODY_LIMIT.small),
   authorize("editor"),
   validate({ body: createSequenceSchema }),
   seqController.create,
@@ -32,6 +34,7 @@ router.post(
 // PUT /api/sequences/:id — update sequence (editor+)
 router.put(
   "/sequences/:id",
+  jsonBody(BODY_LIMIT.small),
   authorize("editor"),
   validate({ body: updateSequenceSchema }),
   seqController.update,

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
+import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
 import {
   createShotSchema,
   updateShotSchema,
@@ -24,6 +25,7 @@ router.get("/shots/:id", shotController.get);
 // POST /api/sequences/:sequenceId/shots — create shot (editor+)
 router.post(
   "/sequences/:sequenceId/shots",
+  jsonBody(BODY_LIMIT.scene),
   authorize("editor"),
   validate({ body: createShotSchema }),
   shotController.create,
@@ -32,6 +34,7 @@ router.post(
 // PUT /api/shots/:id — update shot (editor+)
 router.put(
   "/shots/:id",
+  jsonBody(BODY_LIMIT.scene),
   authorize("editor"),
   validate({ body: updateShotSchema }),
   shotController.update,
