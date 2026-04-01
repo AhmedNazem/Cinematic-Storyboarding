@@ -30,7 +30,7 @@
 - [x] Add CSRF token validation for state-mutating requests
 - [x] Add HSTS header (`Strict-Transport-Security: includeSubDomains`)
 - [x] Validate request payload size per-route (not just global 10MB)
-- [ ] Admin routes: require MFA verification token in addition to JWT
+- [x] Admin routes: require MFA verification token in addition to JWT
 - [ ] Audit logging: record who changed what and when (append-only log table)
 
 ### 1.3 Socket.IO — Real-Time Foundation

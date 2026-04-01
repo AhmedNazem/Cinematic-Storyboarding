@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
+import { requireMfa } from "../middleware/require-mfa";
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -43,6 +44,6 @@ router.put(
 );
 
 // DELETE /api/projects/:id — delete project (admin/owner)
-router.delete("/:id", authorize("admin"), projectController.remove);
+router.delete("/:id", authorize("admin"), requireMfa, projectController.remove);
 
 export default router;

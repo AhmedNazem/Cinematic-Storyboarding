@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
+import { requireMfa } from "../middleware/require-mfa";
 import { updateOrganizationSchema } from "../schemas/organization.schema";
 import * as orgController from "../controllers/organization.controller";
 
@@ -19,6 +20,7 @@ router.put(
   "/",
   jsonBody(BODY_LIMIT.small),
   authorize("admin"),
+  requireMfa,
   validate({ body: updateOrganizationSchema }),
   orgController.update,
 );

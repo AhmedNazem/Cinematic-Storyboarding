@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
+import { requireMfa } from "../middleware/require-mfa";
 import {
   createUserSchema,
   updateUserSchema,
@@ -24,6 +25,7 @@ router.post(
   "/",
   jsonBody(BODY_LIMIT.tiny),
   authorize("admin"),
+  requireMfa,
   validate({ body: createUserSchema }),
   userController.create,
 );
@@ -33,11 +35,12 @@ router.put(
   "/:id",
   jsonBody(BODY_LIMIT.tiny),
   authorize("admin"),
+  requireMfa,
   validate({ body: updateUserSchema }),
   userController.update,
 );
 
 // DELETE /api/users/:id — remove user (admin/owner)
-router.delete("/:id", authorize("admin"), userController.remove);
+router.delete("/:id", authorize("admin"), requireMfa, userController.remove);
 
 export default router;

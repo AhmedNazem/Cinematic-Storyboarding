@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
+import { requireMfa } from "../middleware/require-mfa";
 import {
   createSequenceSchema,
   updateSequenceSchema,
@@ -44,6 +45,7 @@ router.put(
 router.delete(
   "/sequences/:id",
   authorize("admin"),
+  requireMfa,
   seqController.remove,
 );
 

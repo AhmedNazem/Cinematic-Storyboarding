@@ -3,6 +3,7 @@ import { authenticate } from "../middleware/authenticate";
 import { authorize } from "../middleware/authorize";
 import { validate } from "../middleware/validate";
 import { jsonBody, BODY_LIMIT } from "../middleware/body-limit";
+import { requireMfa } from "../middleware/require-mfa";
 import {
   createShotSchema,
   updateShotSchema,
@@ -44,6 +45,7 @@ router.put(
 router.delete(
   "/shots/:id",
   authorize("admin"),
+  requireMfa,
   shotController.remove,
 );
 
