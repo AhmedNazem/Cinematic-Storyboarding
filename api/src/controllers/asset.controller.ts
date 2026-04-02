@@ -6,7 +6,7 @@
  */
 
 import { Response, NextFunction } from "express";
-import { generateUploadToken, getReadUrl } from "../services/asset.service";
+import { generateUploadToken, getReadUrl, getGltfContent } from "../services/asset.service";
 import { AssetReadSchema, PresignRequest } from "../schemas/asset.schema";
 import { AuthenticatedRequest } from "../types";
 
