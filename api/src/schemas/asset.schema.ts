@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { ALLOWED_MIME_TYPES } from "../lib/storage/magic_bytes";
+import { ALLOWED_MIME_TYPES } from "../lib/storage/magic-bytes";
 
 /** Asset type enum — mirrors AssetType in magic-bytes.ts */
 export const AssetTypeSchema = z.enum([
