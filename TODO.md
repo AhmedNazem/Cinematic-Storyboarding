@@ -60,7 +60,7 @@
 ### 1.5 Observability
 
 - [x] Integrate `logger` into all request handlers (currently defined but unused globally)
-- [ ] Sentry SDK setup (API side): source maps, PII scrubbing, performance tracing
+- [x] Sentry SDK setup (API side): source maps, PII scrubbing, performance tracing
 - [ ] Prometheus metrics: WebSocket connections, render times, 3D asset load times
 - [ ] Custom middleware to emit `api_request_duration_ms` histogram
 - [ ] `/metrics` endpoint (Prometheus scrape target, internal network only)

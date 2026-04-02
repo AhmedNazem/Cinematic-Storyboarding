@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../lib/utils/api-error";
 import { Prisma } from "@prisma/client";
 import { ApiErrorResponse } from "../types";
+import { Sentry } from "../lib/sentry";
 
 /**
  * Centralized error handler middleware.
@@ -46,6 +47,7 @@ export function errorHandler(
   }
 
   // --- Unknown / unexpected errors ---
+  Sentry.captureException(err);
   console.error("[ERROR] Unhandled:", err.stack || err.message);
 
   res.status(500).json({

@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { initSentry, Sentry } from "./lib/sentry";
+initSentry();
 import express, { Request, Response } from "express";
 import helmet from "helmet";
 import cors from "cors";
@@ -103,7 +105,8 @@ app.use("/api", sequenceRoutes);      // Hybrid: /api/projects/:projectId/sequen
 app.use("/api", shotRoutes);          // Hybrid: /api/sequences/:sequenceId/shots + /api/shots/:id
 app.use("/api/assets", assetRoutes);  // S3 presign + CloudFront signed read URLs
 
-// ─── Centralized Error Handler (MUST be last) ───
+// ─── Error Handlers (Sentry first, then custom) ───
+Sentry.setupExpressErrorHandler(app);
 app.use(errorHandler);
 
 // ─── Start Server ───

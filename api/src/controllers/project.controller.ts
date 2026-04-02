@@ -20,7 +20,7 @@ export async function list(
       page,
       pageSize,
     });
-    logger.debug("project.list", { orgId: req.user!.orgId, page, pageSize, total: result.total });
+    logger.debug("project.list", { orgId: req.user!.orgId, page, pageSize, total: result.pagination.total });
     res.json({ success: true, ...result });
   } catch (err) {
     next(err);
