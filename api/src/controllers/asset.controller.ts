@@ -9,6 +9,7 @@ import { Response, NextFunction } from "express";
 import { generateUploadToken, getReadUrl, getGltfContent } from "../services/asset.service";
 import { AssetReadSchema, PresignRequest } from "../schemas/asset.schema";
 import { AuthenticatedRequest } from "../types";
+import { logger } from "../lib/utils/logger";
 
 // ─── POST /api/assets/presign ─────────────────────────────────────────────────
 
@@ -32,6 +33,7 @@ export async function presignUpload(
     const body = req.body as PresignRequest;
 
     const result = await generateUploadToken(orgId, body);
+    logger.info("asset.presign", { orgId, assetKey: result.assetKey });
 
     res.status(200).json({
       success: true,
@@ -79,6 +81,7 @@ export async function getAssetUrl(
     const { key } = parseResult.data;
 
     const result = await getReadUrl(orgId, key);
+    logger.debug("asset.getUrl", { orgId, key });
 
     res.status(200).json({
       success: true,
@@ -120,6 +123,7 @@ export async function serveGltf(
     const { key } = parseResult.data;
 
     const sanitized = await getGltfContent(orgId, key);
+    logger.debug("asset.serveGltf", { orgId, key });
 
     res.status(200).type("model/gltf+json").json(sanitized);
   } catch (err) {
