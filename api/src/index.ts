@@ -22,6 +22,7 @@ import userRoutes from "./routes/user.routes";
 import projectRoutes from "./routes/project.routes";
 import sequenceRoutes from "./routes/sequence.routes";
 import shotRoutes from "./routes/shot.routes";
+import assetRoutes from "./routes/asset.routes";
 
 const app = express();
 const httpServer = createServer(app);
@@ -98,8 +99,9 @@ if (process.env.NODE_ENV !== "production") {
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);
-app.use("/api", sequenceRoutes); // Hybrid: /api/projects/:projectId/sequences + /api/sequences/:id
-app.use("/api", shotRoutes);     // Hybrid: /api/sequences/:sequenceId/shots + /api/shots/:id
+app.use("/api", sequenceRoutes);      // Hybrid: /api/projects/:projectId/sequences + /api/sequences/:id
+app.use("/api", shotRoutes);          // Hybrid: /api/sequences/:sequenceId/shots + /api/shots/:id
+app.use("/api/assets", assetRoutes);  // S3 presign + CloudFront signed read URLs
 
 // ─── Centralized Error Handler (MUST be last) ───
 app.use(errorHandler);
