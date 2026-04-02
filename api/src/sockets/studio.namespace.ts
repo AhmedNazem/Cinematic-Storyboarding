@@ -13,6 +13,9 @@ import {
   type ShotUpdatePayload,
 } from "./schemas/studio.schemas";
 import type { AuthenticatedSocket, SocketErrorPayload } from "./types";
+import { wsConnections, wsEvents } from "../lib/metrics";
+
+const NS = "/studio";
 
 const ROOM = (projectId: string): string => `project:${projectId}`;
 
@@ -89,13 +92,15 @@ export function registerStudioNamespace(io: Server): void {
   namespace.on("connection", (socket) => {
     const authed = socket as AuthenticatedSocket;
     applySocketRateLimit(authed, { limit: 60, windowMs: 10_000 });
-    logger.info("Socket connected", { namespace: "/studio", socketId: authed.id, userId: authed.data.user.id });
+    wsConnections.inc({ namespace: NS });
+    logger.info("Socket connected", { namespace: NS, socketId: authed.id, userId: authed.data.user.id });
 
-    authed.on("studio:join",  withValidation(joinProjectRoomSchema,  onJoin));
-    authed.on("studio:leave", withValidation(leaveProjectRoomSchema, onLeave));
-    authed.on("shot:update",  withValidation(shotUpdateSchema,       onShotUpdate));
+    authed.on("studio:join",  withValidation(joinProjectRoomSchema,  (s, p) => { wsEvents.inc({ namespace: NS, event: "studio:join" });  return onJoin(s, p); }));
+    authed.on("studio:leave", withValidation(leaveProjectRoomSchema, (s, p) => { wsEvents.inc({ namespace: NS, event: "studio:leave" }); return onLeave(s, p); }));
+    authed.on("shot:update",  withValidation(shotUpdateSchema,       (s, p) => { wsEvents.inc({ namespace: NS, event: "shot:update" });  return onShotUpdate(s, p); }));
     authed.on("disconnect", () => {
-      logger.info("Socket disconnected", { namespace: "/studio", socketId: authed.id, userId: authed.data.user.id });
+      wsConnections.dec({ namespace: NS });
+      logger.info("Socket disconnected", { namespace: NS, socketId: authed.id, userId: authed.data.user.id });
     });
   });
 }

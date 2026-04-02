@@ -10,6 +10,9 @@ import type {
   TimelineProgressPayload,
 } from "./types";
 import type { PresenceUpdatePayload, TimelineSyncPayload } from "./schemas/collaboration.schemas";
+import { wsConnections, wsEvents } from "../lib/metrics";
+
+const NS = "/collaboration";
 
 const ROOM = (projectId: string): string => `project:${projectId}`;
 
@@ -51,10 +54,11 @@ export function registerCollaborationNamespace(io: Server): void {
 
   namespace.on("connection", (socket) => {
     const authed = socket as AuthenticatedSocket;
-    logger.info("Socket connected", { namespace: "/collaboration", socketId: authed.id, userId: authed.data.user.id });
+    wsConnections.inc({ namespace: NS });
+    logger.info("Socket connected", { namespace: NS, socketId: authed.id, userId: authed.data.user.id });
 
-    authed.on("collaboration:presence",      withValidation(presenceUpdateSchema, onPresence));
-    authed.on("collaboration:timeline-sync", withValidation(timelineSyncSchema,  onTimelineSync));
-    authed.on("disconnect", () => onDisconnect(authed));
+    authed.on("collaboration:presence",      withValidation(presenceUpdateSchema, (s, p) => { wsEvents.inc({ namespace: NS, event: "presence" });      return onPresence(s, p); }));
+    authed.on("collaboration:timeline-sync", withValidation(timelineSyncSchema,  (s, p) => { wsEvents.inc({ namespace: NS, event: "timeline-sync" }); return onTimelineSync(s, p); }));
+    authed.on("disconnect", () => { wsConnections.dec({ namespace: NS }); onDisconnect(authed); });
   });
 }

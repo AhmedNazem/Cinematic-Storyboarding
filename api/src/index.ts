@@ -17,6 +17,8 @@ import { csrfProtection } from "./middleware/csrf";
 import { logger } from "./lib/utils/logger";
 import { generateToken } from "./lib/auth/jwt";
 import { mountNamespaces } from "./sockets";
+import { metricsMiddleware } from "./middleware/metrics";
+import { registry, isMetricsAllowed } from "./lib/metrics";
 
 // ─── Route Imports ───
 import organizationRoutes from "./routes/organization.routes";
@@ -61,6 +63,19 @@ app.use(cspWithNonce);
 app.use(correlationId);
 app.use(publicRateLimit);
 app.use(csrfProtection);
+app.use(metricsMiddleware);
+
+// ─── Metrics (internal network only) ───
+const METRICS_ALLOWED = (process.env.METRICS_ALLOWED_CIDRS ?? "127.0.0.1,::1,::ffff:127.0.0.1").split(",");
+
+app.get("/metrics", async (req: Request, res: Response) => {
+  if (!isMetricsAllowed(req.ip ?? "", METRICS_ALLOWED)) {
+    res.status(403).json({ message: "Forbidden" });
+    return;
+  }
+  res.set("Content-Type", registry.contentType);
+  res.end(await registry.metrics());
+});
 
 // ─── Health Checks ───
 app.get("/health/live", (_req: Request, res: Response) => {

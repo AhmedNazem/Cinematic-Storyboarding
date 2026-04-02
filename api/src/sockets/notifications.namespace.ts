@@ -4,6 +4,9 @@ import { authenticateSocket } from "./middleware/authenticate.socket";
 import { withValidation } from "./middleware/validate.socket";
 import { subscribeNotificationsSchema } from "./schemas/notifications.schemas";
 import type { AuthenticatedSocket, NotificationPayload } from "./types";
+import { wsConnections, wsEvents } from "../lib/metrics";
+
+const NS = "/notifications";
 
 const ORG_ROOM = (orgId: string): string => `org:${orgId}:notifications`;
 
@@ -19,11 +22,13 @@ export function registerNotificationsNamespace(io: Server): void {
 
   namespace.on("connection", (socket) => {
     const authed = socket as AuthenticatedSocket;
-    logger.info("Socket connected", { namespace: "/notifications", socketId: authed.id, userId: authed.data.user.id });
+    wsConnections.inc({ namespace: NS });
+    logger.info("Socket connected", { namespace: NS, socketId: authed.id, userId: authed.data.user.id });
 
-    authed.on("notifications:subscribe", withValidation(subscribeNotificationsSchema, onSubscribe));
+    authed.on("notifications:subscribe", withValidation(subscribeNotificationsSchema, (s, p) => { wsEvents.inc({ namespace: NS, event: "subscribe" }); return onSubscribe(s, p); }));
     authed.on("disconnect", () => {
-      logger.info("Socket disconnected", { namespace: "/notifications", socketId: authed.id });
+      wsConnections.dec({ namespace: NS });
+      logger.info("Socket disconnected", { namespace: NS, socketId: authed.id });
     });
   });
 }
