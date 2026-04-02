@@ -47,15 +47,15 @@
 - [x] Redis adapter for horizontal scaling (presence state)
 - [x] Optimistic UI reconciliation broadcast on conflict
 
-### 1.4 Storage — AWS S3
+### 1.4 Storage — Cloudflare R2
 
-- [ ] Install and configure AWS SDK (`@aws-sdk/client-s3`)
-- [ ] Presigned URL generation endpoint (`POST /api/assets/presign`)
-- [ ] File type validation (magic bytes check, not extension)
-- [ ] Max size enforcement + virus scan hook stub
-- [ ] S3 key naming: `/{org_id}/{project_id}/{asset_type}/{uuid}.{ext}`
-- [ ] CloudFront signed URL generation for read access
-- [ ] GLTF sanitization: strip `extras` with untrusted scripts before serving
+- [x] Configure `@aws-sdk/client-s3` with R2 endpoint (`https://<account_id>.r2.cloudflarestorage.com`)
+- [x] Presigned URL generation endpoint (`POST /api/assets/presign`) using R2-compatible `getSignedUrl`
+- [x] File type validation (magic bytes check, not extension)
+- [x] Max size enforcement + virus scan hook stub (500 MB schema + `virus-scan.stub.ts` wired into presign flow)
+- [x] R2 key naming: `/{org_id}/{project_id}/{asset_type}/{uuid}.{ext}`
+- [x] R2 public bucket or custom domain signed URL generation for read access (no CloudFront)
+- [x] GLTF sanitization: strip `extras` with untrusted scripts before serving (`GET /api/assets/gltf` proxies through `sanitizeGltf()`)
 
 ### 1.5 Observability
 
@@ -157,8 +157,8 @@
 
 ### 3.4 Shot Panel & Thumbnails
 
-- [ ] Shot thumbnail generation: `gl.domElement.toDataURL()` → upload to S3
-- [ ] Thumbnail caching: retrieve from S3/CDN on load
+- [ ] Shot thumbnail generation: `gl.domElement.toDataURL()` → upload to R2
+- [ ] Thumbnail caching: retrieve from R2/custom domain on load
 - [ ] Shot panel component: thumbnail + name + duration display
 - [ ] Drag-to-reorder shots (`orderIndex` update)
 
@@ -197,7 +197,7 @@
 - [ ] FFmpeg pipeline: frames → MP4 animatic
 - [ ] Export to PDF panel sheet (shot thumbnails + metadata)
 - [ ] Export status: SSE progress stream to client
-- [ ] S3 upload of rendered output + signed download URL
+- [ ] R2 upload of rendered output + signed download URL
 
 ---
 

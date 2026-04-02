@@ -1,6 +1,9 @@
 import { prisma } from "../lib/db/client";
 import { generatePresignedUpload } from "../lib/storage/storage.presign";
 import { generateSignedReadUrl } from "../lib/storage/signed-urls";
+import { fetchObjectAsText } from "../lib/storage/storage.fetch";
+import { scheduleVirusScan } from "../lib/storage/virus-scan.stub";
+import { sanitizeGltf } from "../lib/storage/gltf-sanitizer";
 import { PresignRequest } from "../schemas/asset.schema";
 import { AssetType } from "../lib/storage/magic-bytes";
 
@@ -45,6 +48,9 @@ export async function generateUploadToken(
     ext,
   });
 
+  // Fire-and-forget stub — replace with real scanner before production
+  scheduleVirusScan(result.assetKey);
+
   return result;
 }
 
@@ -82,6 +88,46 @@ export async function getReadUrl(
   const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
   return { readUrl, expiresAt };
+}
+
+// ─── GLTF Sanitized Serve ─────────────────────────────────────────────────────
+
+/**
+ * Fetch a .gltf file from R2, sanitize it (strip "extras"), and return
+ * the cleaned JSON. Only works for JSON-based .gltf files, not binary .glb.
+ *
+ * @param orgId    — from the verified JWT
+ * @param assetKey — must be owned by the org and end in ".gltf"
+ */
+export async function getGltfContent(
+  orgId: string,
+  assetKey: string,
+): Promise<Record<string, unknown>> {
+  if (!assetKey.startsWith(`${orgId}/`)) {
+    throw Object.assign(
+      new Error("Access denied: asset key does not belong to your organization"),
+      { statusCode: 403 },
+    );
+  }
+
+  if (!assetKey.endsWith(".gltf")) {
+    throw Object.assign(
+      new Error("This endpoint only serves .gltf files — use /api/assets/url for other types"),
+      { statusCode: 400 },
+    );
+  }
+
+  const raw = await fetchObjectAsText(assetKey);
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw Object.assign(new Error("Asset is not valid JSON"), { statusCode: 422 });
+  }
+
+  const { sanitized } = sanitizeGltf(parsed);
+  return sanitized;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

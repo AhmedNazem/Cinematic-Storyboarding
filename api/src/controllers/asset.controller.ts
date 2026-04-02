@@ -91,3 +91,38 @@ export async function getAssetUrl(
     next(err);
   }
 }
+
+// ─── GET /api/assets/gltf?key=... ────────────────────────────────────────────
+
+/**
+ * Fetch a .gltf file from R2, sanitize it (strip "extras"), and serve inline.
+ *
+ * Binary .glb files are NOT supported here — use /api/assets/url for those.
+ * Returns the sanitized GLTF JSON with Content-Type: model/gltf+json.
+ */
+export async function serveGltf(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const parseResult = AssetReadSchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        success: false,
+        message: "Missing or invalid 'key' query parameter",
+        code: "VALIDATION_ERROR",
+      });
+      return;
+    }
+
+    const { orgId } = req.user!;
+    const { key } = parseResult.data;
+
+    const sanitized = await getGltfContent(orgId, key);
+
+    res.status(200).type("model/gltf+json").json(sanitized);
+  } catch (err) {
+    next(err);
+  }
+}

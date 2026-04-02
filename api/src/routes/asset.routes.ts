@@ -5,8 +5,9 @@
  * The body-limit middleware caps request body size to prevent abuse.
  *
  * Routes:
- *   POST /api/assets/presign  — Request a presigned S3 upload URL
+ *   POST /api/assets/presign  — Request a presigned R2 upload URL
  *   GET  /api/assets/url      — Get a signed read URL for an existing asset
+ *   GET  /api/assets/gltf     — Fetch, sanitize, and serve a .gltf file inline
  */
 
 import { Router } from "express";
@@ -40,7 +41,7 @@ router.post(
 
 /**
  * GET /api/assets/url?key={assetKey}
- * Get a time-limited signed URL for reading/downloading an asset from S3.
+ * Get a time-limited signed URL for reading/downloading an asset from R2.
  *
  * Any authenticated member of the org can read assets.
  * The service layer enforces that the key belongs to the requesting org.
@@ -49,6 +50,19 @@ router.post(
 router.get(
   "/url",
   assetController.getAssetUrl,
+);
+
+/**
+ * GET /api/assets/gltf?key={assetKey}
+ * Fetch a .gltf file from R2, sanitize it (strip "extras"), and serve inline.
+ *
+ * Strips any "extras" fields that may contain untrusted scripts before serving.
+ * Only JSON-based .gltf files — binary .glb must use /url instead.
+ * Returns: sanitized GLTF JSON (Content-Type: model/gltf+json)
+ */
+router.get(
+  "/gltf",
+  assetController.serveGltf,
 );
 
 export default router;
