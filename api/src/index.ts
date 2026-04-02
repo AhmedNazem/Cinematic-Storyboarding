@@ -7,13 +7,14 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import { prisma } from "./lib/db/client";
 import { errorHandler } from "./middleware/error-handler";
-import { publicRateLimit, applySocketRateLimit } from "./middleware/rate-limit";
+import { publicRateLimit } from "./middleware/rate-limit";
 import { jsonBody, BODY_LIMIT } from "./middleware/body-limit";
 import { correlationId } from "./middleware/correlation-id";
 import { cspWithNonce } from "./middleware/csp";
 import { csrfProtection } from "./middleware/csrf";
 import { logger } from "./lib/utils/logger";
 import { generateToken } from "./lib/auth/jwt";
+import { mountNamespaces } from "./sockets";
 
 // ─── Route Imports ───
 import organizationRoutes from "./routes/organization.routes";
@@ -100,27 +101,26 @@ app.use("/api/projects", projectRoutes);
 app.use("/api", sequenceRoutes); // Hybrid: /api/projects/:projectId/sequences + /api/sequences/:id
 app.use("/api", shotRoutes);     // Hybrid: /api/sequences/:sequenceId/shots + /api/shots/:id
 
-// ─── Socket.IO Namespaces ───
-const studioNamespace = io.of("/studio");
-studioNamespace.on("connection", (socket) => {
-  applySocketRateLimit(socket, { limit: 60, windowMs: 10_000 }); // 60 events / 10s per socket
-  logger.info("Socket connected", { namespace: "/studio", socketId: socket.id });
-  socket.on("disconnect", () => {
-    logger.info("Socket disconnected", { namespace: "/studio", socketId: socket.id });
-  });
-});
-
 // ─── Centralized Error Handler (MUST be last) ───
 app.use(errorHandler);
 
 // ─── Start Server ───
-httpServer.listen(PORT, async () => {
-  logger.info("AXIOM BFF Backend started", { port: PORT });
+async function main(): Promise<void> {
+  // Redis adapter + namespace registration (must run before listen)
+  await mountNamespaces(io);
 
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    logger.info("Database connected", { provider: "Neon PostgreSQL" });
-  } catch (err) {
-    logger.error("Database connection failed", { error: String(err) });
-  }
+  httpServer.listen(PORT, async () => {
+    logger.info("AXIOM BFF Backend started", { port: PORT });
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      logger.info("Database connected", { provider: "Neon PostgreSQL" });
+    } catch (err) {
+      logger.error("Database connection failed", { error: String(err) });
+    }
+  });
+}
+
+main().catch((err) => {
+  logger.error("Fatal startup error", { error: String(err) });
+  process.exit(1);
 });

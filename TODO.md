@@ -38,14 +38,14 @@
 
 ### 1.3 Socket.IO — Real-Time Foundation
 
-- [ ] JWT verification on `connection` event — reject unauthenticated sockets
-- [ ] `/studio` namespace: room join with server-side project membership check
-- [ ] `/notifications` namespace: setup
-- [ ] `/collaboration` namespace: setup
-- [ ] Zod validation on every incoming socket event payload
-- [ ] Payload size limit per socket message
-- [ ] Redis adapter for horizontal scaling (presence state)
-- [ ] Optimistic UI reconciliation broadcast on conflict
+- [x] JWT verification on `connection` event — reject unauthenticated sockets
+- [x] `/studio` namespace: room join with server-side project membership check
+- [x] `/notifications` namespace: setup
+- [x] `/collaboration` namespace: setup
+- [x] Zod validation on every incoming socket event payload
+- [x] Payload size limit per socket message
+- [x] Redis adapter for horizontal scaling (presence state)
+- [x] Optimistic UI reconciliation broadcast on conflict
 
 ### 1.4 Storage — AWS S3
 

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l /c/Users/SherdllStore/Desktop/new-fullstack/api/src/**/*.ts)"
+    ]
+  }
+}
