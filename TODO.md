@@ -67,7 +67,7 @@
 
 ### 1.6 Testing — API
 
-- [ ] Unit tests: services (mock repositories)
+- [x] Unit tests: services (mock repositories)
 - [ ] Unit tests: Zod schemas (valid + invalid inputs)
 - [ ] Integration tests: all CRUD endpoints (real DB, test org isolation)
 - [ ] Integration tests: RBAC enforcement (each role boundary)

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(wc -l /c/Users/SherdllStore/Desktop/new-fullstack/api/src/**/*.ts)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls -la /c/Users/SherdllStore/Desktop/new-fullstack/api/*.json)",
+      "Bash(npm test:*)"
     ]
   }
 }
