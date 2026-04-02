@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../types";
 import * as projectService from "../services/project.service";
+import { auditFromReq } from "../lib/audit/audit";
 
 export async function list(
   req: AuthenticatedRequest,
@@ -46,10 +47,8 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const project = await projectService.createProject(
-      req.user!.orgId,
-      req.body,
-    );
+    const project = await projectService.createProject(req.user!.orgId, req.body);
+    auditFromReq(req, "project.create", "Project", project.id);
     res.status(201).json({ success: true, data: project });
   } catch (err) {
     next(err);
@@ -62,11 +61,8 @@ export async function update(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const project = await projectService.updateProject(
-      req.params.id,
-      req.user!.orgId,
-      req.body,
-    );
+    const project = await projectService.updateProject(req.params.id, req.user!.orgId, req.body);
+    auditFromReq(req, "project.update", "Project", project.id);
     res.json({ success: true, data: project });
   } catch (err) {
     next(err);
@@ -80,6 +76,7 @@ export async function remove(
 ): Promise<void> {
   try {
     await projectService.deleteProject(req.params.id, req.user!.orgId);
+    auditFromReq(req, "project.delete", "Project", req.params.id);
     res.json({ success: true, data: null, message: "Project deleted" });
   } catch (err) {
     next(err);

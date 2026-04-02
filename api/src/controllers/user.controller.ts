@@ -1,6 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthenticatedRequest } from "../types";
 import * as userService from "../services/user.service";
+import { auditFromReq } from "../lib/audit/audit";
 
 export async function list(
   req: AuthenticatedRequest,
@@ -35,6 +36,7 @@ export async function create(
 ): Promise<void> {
   try {
     const user = await userService.createUser(req.user!.orgId, req.body);
+    auditFromReq(req, "user.create", "User", user.id);
     res.status(201).json({ success: true, data: user });
   } catch (err) {
     next(err);
@@ -53,6 +55,7 @@ export async function update(
       req.user!.id,
       req.body,
     );
+    auditFromReq(req, "user.update", "User", user.id);
     res.json({ success: true, data: user });
   } catch (err) {
     next(err);
@@ -65,11 +68,8 @@ export async function remove(
   next: NextFunction,
 ): Promise<void> {
   try {
-    await userService.removeUser(
-      req.params.id,
-      req.user!.orgId,
-      req.user!.id,
-    );
+    await userService.removeUser(req.params.id, req.user!.orgId, req.user!.id);
+    auditFromReq(req, "user.delete", "User", req.params.id);
     res.json({ success: true, data: null, message: "User removed" });
   } catch (err) {
     next(err);

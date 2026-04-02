@@ -94,3 +94,25 @@ model Shot {
   @@index([sequenceId])
   @@map("shots")
 }
+
+// -------------------------------------------------------------
+// AUDIT LOG — append-only, no updatedAt, no deletedAt
+// -------------------------------------------------------------
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  orgId         String
+  actorId       String   // User who performed the action
+  action        String   // e.g. "project.create", "user.delete"
+  resourceType  String   // e.g. "Project", "Shot", "User"
+  resourceId    String   // ID of the affected resource
+  ip            String?  // Request IP (may be absent for internal actions)
+  correlationId String?  // X-Correlation-ID for request tracing
+  metadata      Json?    // Optional before/after snapshots or extra context
+  createdAt     DateTime @default(now())
+
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([actorId])
+  @@index([resourceType, resourceId])
+  @@map("audit_logs")
+}
