@@ -7,13 +7,15 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "vitest": {
     "environment": "node",
-    "include": ["src/**/*.test.ts"]
+    "include": ["src/**/*.test.ts"],
+    "exclude": ["src/__tests__/integration/**", "node_modules/**"]
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1022.0",

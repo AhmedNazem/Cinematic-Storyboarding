@@ -69,9 +69,10 @@
 
 - [x] Unit tests: services (mock repositories)
 - [x] Unit tests: Zod schemas (valid + invalid inputs)
-- [ ] Integration tests: all CRUD endpoints (real DB, test org isolation)
+- [x] Integration tests: all CRUD endpoints (real DB, test org isolation)
 - [ ] Integration tests: RBAC enforcement (each role boundary)
 - [ ] Integration tests: soft-delete cascade (project → sequences → shots)
+- [ ] Integration tests: asset flow (presign, GLTF proxy) — mock R2, real DB
 - [ ] Test seed fixture factory (deterministic test data)
 
 ---

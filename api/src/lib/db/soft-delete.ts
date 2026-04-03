@@ -33,17 +33,18 @@ export function withSoftDeleteFilter(client: PrismaClient) {
           return query(args);
         },
 
-        async findUnique({ args, query }) {
-          // findUnique where clause is strict; transform to findFirst to allow deletedAt filter
-          // Use client[model] to access the specialized findFirst method
-          return (client as any)[(query as any).model].findFirst({
+        async findUnique({ args, query, model }: any) {
+          // findUnique where clause is strict; redirect to base client findFirst to allow deletedAt filter
+          const modelKey = (model as string).charAt(0).toLowerCase() + (model as string).slice(1);
+          return (client as any)[modelKey].findFirst({
             ...args,
             where: { ...args.where, deletedAt: (args.where as any)?.deletedAt ?? null },
           });
         },
 
-        async findUniqueOrThrow({ args, query }) {
-          return (client as any)[(query as any).model].findFirstOrThrow({
+        async findUniqueOrThrow({ args, query, model }: any) {
+          const modelKey = (model as string).charAt(0).toLowerCase() + (model as string).slice(1);
+          return (client as any)[modelKey].findFirstOrThrow({
             ...args,
             where: { ...args.where, deletedAt: (args.where as any)?.deletedAt ?? null },
           });

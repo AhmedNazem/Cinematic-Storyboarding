@@ -33,8 +33,8 @@ router.use(authenticate);
  */
 router.post(
   "/presign",
-  jsonBody(BODY_LIMIT.small),         // prevent oversized JSON bodies
-  authorize("editor"),                // viewers cannot upload
+  jsonBody(BODY_LIMIT.small), // prevent oversized JSON bodies
+  authorize("editor"), // viewers cannot upload
   validate({ body: PresignRequestSchema }),
   assetController.presignUpload,
 );
@@ -47,10 +47,7 @@ router.post(
  * The service layer enforces that the key belongs to the requesting org.
  * Returns: { readUrl, expiresAt }
  */
-router.get(
-  "/url",
-  assetController.getAssetUrl,
-);
+router.get("/url", assetController.getAssetUrl);
 
 /**
  * GET /api/assets/gltf?key={assetKey}
@@ -60,9 +57,6 @@ router.get(
  * Only JSON-based .gltf files — binary .glb must use /url instead.
  * Returns: sanitized GLTF JSON (Content-Type: model/gltf+json)
  */
-router.get(
-  "/gltf",
-  assetController.serveGltf,
-);
+router.get("/gltf", assetController.serveGltf);
 
 export default router;
