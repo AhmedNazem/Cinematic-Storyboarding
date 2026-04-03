@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { initSentry, Sentry } from "./lib/sentry";
 initSentry();
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import helmet from "helmet";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -21,12 +21,17 @@ import { metricsMiddleware } from "./middleware/metrics";
 import { registry, isMetricsAllowed } from "./lib/metrics";
 
 // ─── Route Imports ───
+import authRoutes from "./routes/auth.routes";
 import organizationRoutes from "./routes/organization.routes";
 import userRoutes from "./routes/user.routes";
 import projectRoutes from "./routes/project.routes";
 import sequenceRoutes from "./routes/sequence.routes";
 import shotRoutes from "./routes/shot.routes";
 import assetRoutes from "./routes/asset.routes";
+
+// ─── Swagger ───
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./lib/swagger";
 
 const app = express();
 const httpServer = createServer(app);
@@ -112,7 +117,31 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
+// ─── API Docs ───
+// Swagger UI bundles its own JS/CSS without nonces, so the strict per-request
+// CSP set by cspWithNonce would block it. Override it to a self-only policy
+// for the docs path only — the raw API routes are unaffected.
+const swaggerCsp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self' data:",
+].join("; ");
+
+app.use(
+  "/api/docs",
+  (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader("Content-Security-Policy", swaggerCsp);
+    next();
+  },
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec, { explorer: false }),
+);
+app.get("/api/docs.json", (_req: Request, res: Response) => res.json(swaggerSpec));
+
 // ─── API Routes ───
+app.use("/api/auth", authRoutes);
 app.use("/api/organizations", organizationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/projects", projectRoutes);

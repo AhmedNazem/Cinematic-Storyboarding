@@ -27,21 +27,38 @@ model Organization {
 }
 
 model User {
-  id             String       @id @default(uuid())
+  id             String         @id @default(uuid())
   orgId          String
-  email          String       @unique
-  role           String       @default("viewer") // viewer, editor, admin, owner
-  authProviderId String?      // For NextAuth/Auth0 linking
-  mfaEnabled     Boolean      @default(false)
-  mfaSecret      String?      // TOTP secret (encrypted at rest in production)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  email          String         @unique
+  role           String         @default("viewer") // viewer, editor, admin, owner
+  passwordHash   String?        // null for invited users until they set a password
+  mfaEnabled     Boolean        @default(false)
+  mfaSecret      String?        // TOTP secret (encrypted at rest in production)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   deletedAt      DateTime?
 
-  organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  organization   Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  refreshTokens  RefreshToken[]
 
   @@index([orgId])
   @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique   // SHA-256 of the raw token sent to the client
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  ip        String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
 }
 
 model Project {

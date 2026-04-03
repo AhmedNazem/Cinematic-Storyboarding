@@ -16,8 +16,8 @@ export function verifyToken(token: string): JwtPayload {
 }
 
 /**
- * Generate a JWT — used by Next.js BFF or dev testing.
- * In production, tokens are issued by the Next.js auth layer.
+ * Generate a short-lived JWT access token.
+ * Issued by POST /api/auth/login and POST /api/auth/refresh.
  */
 export function generateToken(payload: {
   sub: string;

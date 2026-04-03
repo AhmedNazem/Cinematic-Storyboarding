@@ -43,6 +43,13 @@ export function csrfProtection(
     return;
   }
 
+  // Auth endpoints use JSON bodies — browsers can't cross-origin POST JSON
+  // without a CORS preflight, so they're inherently CSRF-safe.
+  if (req.path.startsWith("/api/auth")) {
+    next();
+    return;
+  }
+
   const headerToken = req.headers[CSRF_HEADER] as string | undefined;
 
   if (!headerToken || headerToken !== cookieToken) {
