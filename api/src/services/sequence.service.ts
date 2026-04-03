@@ -1,4 +1,5 @@
 import * as seqRepo from "../repositories/sequence.repository";
+import * as shotRepo from "../repositories/shot.repository";
 import * as projectRepo from "../repositories/project.repository";
 import {
   CreateSequenceInput,
@@ -54,12 +55,13 @@ export async function updateSequence(
   return seqRepo.update(id, data);
 }
 
-/** Delete sequence — verifies ownership */
+/** Delete sequence — verifies ownership, cascades soft-delete to shots */
 export async function deleteSequence(id: string, orgId: string) {
   const owned = await seqRepo.verifyOwnership(id, orgId);
   if (!owned) {
     throw ApiError.notFound("Sequence");
   }
 
+  await shotRepo.softDeleteBySequence(id);
   return seqRepo.remove(id);
 }
