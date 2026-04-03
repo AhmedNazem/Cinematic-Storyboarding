@@ -72,8 +72,8 @@
 - [x] Integration tests: all CRUD endpoints (real DB, test org isolation)
 - [x] Integration tests: RBAC enforcement (each role boundary)
 - [x] Integration tests: soft-delete cascade (project → sequences → shots)
-- [ ] Integration tests: asset flow (presign, GLTF proxy) — mock R2, real DB
-- [ ] Test seed fixture factory (deterministic test data)
+- [x] Integration tests: asset flow (presign, GLTF proxy) — mock R2, real DB
+- [x] Test seed fixture factory (deterministic test data)
 
 ---
 

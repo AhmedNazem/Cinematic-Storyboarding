@@ -6,7 +6,8 @@
       "Bash(ls -la /c/Users/SherdllStore/Desktop/new-fullstack/api/*.json)",
       "Bash(npm test:*)",
       "Bash(node -e \"import\\('file:///C:/Users/SherdllStore/Desktop/new-fullstack/api/node_modules/otplib/dist/index.js'\\).then\\(m => { console.log\\(m.generateSync.toString\\(\\).slice\\(0, 200\\)\\); }\\)\")",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(npm run:*)"
     ]
   }
 }
