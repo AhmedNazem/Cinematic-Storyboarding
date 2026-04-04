@@ -246,7 +246,7 @@ All errors follow a consistent shape:
   },
   security: [BearerAuth],
   tags: [
-    { name: "Auth", description: "Authentication — register, login, token refresh, logout" },
+    { name: "Auth", description: "Authentication — register, login, token refresh, logout, password reset, and MFA enrollment" },
     { name: "Organizations", description: "Manage the authenticated user's organization" },
     { name: "Users", description: "Invite and manage members within the org" },
     { name: "Projects", description: "Cinematic projects container" },
@@ -512,6 +512,178 @@ All errors follow a consistent shape:
           400: { description: "Validation error", content: { "application/json": { schema: ErrorResponse } } },
           404: { description: "User not found", content: { "application/json": { schema: ErrorResponse } } },
           409: { description: "Password already set", content: { "application/json": { schema: ErrorResponse } } },
+        },
+      },
+    },
+
+    "/auth/forgot-password": {
+      post: {
+        tags: ["Auth"],
+        summary: "Forgot password — send reset email",
+        description: "Sends a password reset link to the given email address. **Always returns 200** regardless of whether the email exists (anti-enumeration). The reset token is valid for **1 hour** and can only be used once.",
+        operationId: "forgotPassword",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["email"],
+                properties: {
+                  email: { type: "string", format: "email", example: "alice@example.com" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: "Reset email dispatched (or silently skipped if address not found)",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    message: { type: "string", example: "If that email exists, a reset link has been sent" },
+                  },
+                },
+              },
+            },
+          },
+          400: { description: "Validation error", content: { "application/json": { schema: ErrorResponse } } },
+        },
+      },
+    },
+
+    "/auth/reset-password": {
+      post: {
+        tags: ["Auth"],
+        summary: "Reset password — complete reset with token",
+        description: "Consumes the single-use token from the reset email and sets a new password. The token expires after **1 hour**.",
+        operationId: "resetPassword",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token", "password"],
+                properties: {
+                  token: { type: "string", description: "Raw reset token from the email link", example: "abc123..." },
+                  password: { type: "string", minLength: 8, maxLength: 128, example: "my-new-secure-password" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "Password updated — user can now log in" },
+          400: {
+            description: "Validation error, token expired, or token already used",
+            content: { "application/json": { schema: ErrorResponse } },
+          },
+          404: { description: "Token not found", content: { "application/json": { schema: ErrorResponse } } },
+        },
+      },
+    },
+
+    "/auth/mfa/setup": {
+      post: {
+        tags: ["Auth"],
+        summary: "MFA setup — generate TOTP secret and QR code",
+        description: "Generates a new TOTP secret and stores it on the user's account (MFA is **not** enabled yet). Returns a QR code data URL to scan with an authenticator app and the raw `otpauthUri` for manual entry. Call `POST /auth/mfa/enable` with a valid code to activate.",
+        operationId: "mfaSetup",
+        security: [BearerAuth],
+        responses: {
+          200: {
+            description: "TOTP secret generated",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean", example: true },
+                    data: {
+                      type: "object",
+                      properties: {
+                        secret: { type: "string", description: "Base32-encoded TOTP secret (for manual entry)", example: "JBSWY3DPEHPK3PXP" },
+                        otpauthUri: { type: "string", description: "otpauth:// URI (encode as QR code)", example: "otpauth://totp/Axiom:alice%40example.com?secret=..." },
+                        qrCodeDataUrl: { type: "string", description: "data:image/png;base64,... — render directly as <img> src" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          401: { description: "Invalid or expired access token", content: { "application/json": { schema: ErrorResponse } } },
+        },
+      },
+    },
+
+    "/auth/mfa/enable": {
+      post: {
+        tags: ["Auth"],
+        summary: "MFA enable — verify TOTP and activate MFA",
+        description: "Verifies the 6-digit TOTP code from the authenticator app and permanently enables MFA on the account. Must call `POST /auth/mfa/setup` first.",
+        operationId: "mfaEnable",
+        security: [BearerAuth],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token"],
+                properties: {
+                  token: { type: "string", minLength: 6, maxLength: 6, pattern: "^\\d{6}$", example: "123456" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "MFA enabled" },
+          400: {
+            description: "Invalid TOTP code or MFA not set up yet",
+            content: { "application/json": { schema: ErrorResponse } },
+          },
+          401: { description: "Invalid or expired access token", content: { "application/json": { schema: ErrorResponse } } },
+        },
+      },
+    },
+
+    "/auth/mfa": {
+      delete: {
+        tags: ["Auth"],
+        summary: "MFA disable — deactivate MFA with valid TOTP code",
+        description: "Verifies the 6-digit TOTP code and clears the TOTP secret, disabling MFA on the account.",
+        operationId: "mfaDisable",
+        security: [BearerAuth],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["token"],
+                properties: {
+                  token: { type: "string", minLength: 6, maxLength: 6, pattern: "^\\d{6}$", example: "123456" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          200: { description: "MFA disabled" },
+          400: {
+            description: "Invalid TOTP code or MFA not currently enabled",
+            content: { "application/json": { schema: ErrorResponse } },
+          },
+          401: { description: "Invalid or expired access token", content: { "application/json": { schema: ErrorResponse } } },
         },
       },
     },

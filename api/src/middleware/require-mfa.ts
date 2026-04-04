@@ -43,13 +43,13 @@ export async function requireMfa(
     return;
   }
 
-  const isValid = verifySync({
+  const result = verifySync({
     secret: user.mfaSecret,
     token,
     epochTolerance: 30, // allow ±30s clock drift
   });
 
-  if (!isValid) {
+  if (!result.valid) {
     res.status(403).json({
       success: false,
       message: "Invalid or expired MFA token",

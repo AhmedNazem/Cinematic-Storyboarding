@@ -38,7 +38,7 @@ export async function create(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const user = await userService.createUser(req.user!.orgId, req.body);
+    const user = await userService.createUser(req.user!.orgId, req.body, req.user!.id);
     auditFromReq(req, "user.create", "User", user.id);
     logger.info("user.create", { userId: user.id, orgId: req.user!.orgId });
     res.status(201).json({ success: true, data: user });

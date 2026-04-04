@@ -39,7 +39,8 @@ model User {
   deletedAt      DateTime?
 
   organization   Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  refreshTokens  RefreshToken[]
+  refreshTokens       RefreshToken[]
+  passwordResetTokens PasswordResetToken[]
 
   @@index([orgId])
   @@map("users")
@@ -59,6 +60,20 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique   // SHA-256 of the raw token emailed to the user
+  userId    String
+  expiresAt DateTime
+  usedAt    DateTime? // set when consumed — single-use
+  createdAt DateTime  @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Project {

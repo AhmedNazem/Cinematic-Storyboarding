@@ -1,6 +1,8 @@
 import * as userRepo from "../repositories/user.repository";
 import { CreateUserInput, UpdateUserInput } from "../schemas/user.schema";
 import { ApiError } from "../lib/utils/api-error";
+import { sendInvitationEmail } from "../lib/email/email.service";
+import { prisma } from "../lib/db/client";
 
 /** List all users in the caller's organization */
 export async function listUsers(orgId: string) {
@@ -18,12 +20,27 @@ export async function getUser(id: string, orgId: string) {
   return user;
 }
 
-/** Invite a new user to the organization */
+/** Invite a new user to the organization — creates account and sends invitation email */
 export async function createUser(
   orgId: string,
   data: CreateUserInput,
+  inviterId: string,
 ) {
-  return userRepo.create(orgId, data);
+  const [org, inviter] = await Promise.all([
+    prisma.organization.findUnique({ where: { id: orgId }, select: { name: true } }),
+    prisma.user.findUnique({ where: { id: inviterId }, select: { email: true } }),
+  ]);
+
+  const user = await userRepo.create(orgId, data);
+
+  // Fire-and-forget — invitation email failure should not block the response
+  sendInvitationEmail({
+    to: data.email,
+    inviterName: inviter?.email ?? "A team member",
+    orgName: org?.name ?? "your organization",
+  }).catch(() => {/* already logged inside sendInvitationEmail */});
+
+  return user;
 }
 
 /** Update a user's role — prevents self-demotion */

@@ -120,3 +120,21 @@ export async function setPassword(req: Request, res: Response): Promise<void> {
   await authService.setPassword(req.body);
   res.json({ success: true, data: null, message: "Password set — you can now log in" });
 }
+
+/**
+ * POST /api/auth/forgot-password
+ * Send a password reset email. Always returns 200 to prevent user enumeration.
+ */
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  await authService.forgotPassword(req.body);
+  res.json({ success: true, data: null, message: "If that email exists, a reset link has been sent" });
+}
+
+/**
+ * POST /api/auth/reset-password
+ * Complete the password reset using the token from the email.
+ */
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  await authService.resetPassword(req.body);
+  res.json({ success: true, data: null, message: "Password updated — you can now log in" });
+}

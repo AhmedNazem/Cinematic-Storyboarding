@@ -4,7 +4,10 @@ import { prisma } from "../lib/db/client";
 import { generateToken } from "../lib/auth/jwt";
 import { REFRESH_TOKEN_CONFIG } from "../lib/auth/constants";
 import { ApiError } from "../lib/utils/api-error";
-import type { RegisterInput, LoginInput, SetPasswordInput } from "../schemas/auth.schema";
+import { sendPasswordResetEmail } from "../lib/email/email.service";
+import type { RegisterInput, LoginInput, SetPasswordInput, ForgotPasswordInput, ResetPasswordInput } from "../schemas/auth.schema";
+
+const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -161,6 +164,62 @@ export async function getProfile(userId: string) {
 
   if (!user) throw new ApiError(404, "User not found", "NOT_FOUND");
   return user;
+}
+
+/**
+ * Initiate a password reset — generate a token, store its hash, send email.
+ * Always returns success even if the email doesn't exist (prevents user enumeration).
+ */
+export async function forgotPassword(input: ForgotPasswordInput) {
+  const user = await prisma.user.findUnique({
+    where: { email: input.email },
+    select: { id: true, deletedAt: true },
+  });
+
+  // Silently succeed if user not found — don't leak whether email exists
+  if (!user || user.deletedAt) return;
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashToken(rawToken);
+
+  await prisma.passwordResetToken.create({
+    data: {
+      tokenHash,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    },
+  });
+
+  await sendPasswordResetEmail({ to: input.email, resetToken: rawToken });
+}
+
+/**
+ * Complete a password reset — validate the token, set the new password, mark token used.
+ */
+export async function resetPassword(input: ResetPasswordInput) {
+  const tokenHash = hashToken(input.token);
+
+  const stored = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: { select: { id: true, deletedAt: true } } },
+  });
+
+  if (!stored || stored.usedAt || stored.expiresAt < new Date() || stored.user.deletedAt) {
+    throw new ApiError(400, "Reset token is invalid or expired", "INVALID_RESET_TOKEN");
+  }
+
+  const passwordHash = await bcrypt.hash(input.password, REFRESH_TOKEN_CONFIG.bcryptRounds);
+
+  await prisma.$transaction([
+    prisma.passwordResetToken.update({
+      where: { id: stored.id },
+      data: { usedAt: new Date() },
+    }),
+    prisma.user.update({
+      where: { id: stored.user.id },
+      data: { passwordHash },
+    }),
+  ]);
 }
 
 // ─── Internal ─────────────────────────────────────────────────────────────────
