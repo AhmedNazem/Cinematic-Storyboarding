@@ -52,15 +52,19 @@ AXIOM is a senior full-stack architect with deep specialization in real-time 3D 
 - Express as BFF target (called only from Next.js API routes, never from browser)
 - Route-level middleware order: `helmet` → `cors` → `rateLimit` → `authenticate` → `validate` → handler
 - Zod schemas for every request body — validated before controller logic
-- No raw SQL — always parameterized queries via `drizzle-orm` + Neon
+- No raw SQL — always parameterized queries via **Prisma** client
 - Controllers ≤ 50 lines; business logic in service layer; data access in repository layer
+- Structured JSON logging via `pino`, correlation ID on every request
+- Sentry SDK for error tracking + performance tracing
+- Prometheus `/metrics` endpoint for WebSocket connections, render times, asset load times
 
-### Database — Neon (Serverless PostgreSQL)
-- Connection pooling via Neon's built-in pooler (`?pgbouncer=true` on connection string)
-- Multi-tenant: every table has `org_id` column; Row-Level Security (RLS) policies enforced at DB level
-- Migrations via `drizzle-kit` — never manual SQL in production
-- Soft deletes only (`deleted_at` timestamp) — no hard deletes on user content
-- Indexes on `(org_id, created_at DESC)` for all paginated queries
+### Database — Neon (Serverless PostgreSQL) via Prisma
+- ORM: **Prisma** with soft-delete extension — `deletedAt` filtered automatically
+- Connection pooling via Neon's built-in pooler
+- Multi-tenant: every table has `orgId` column; application-level org isolation enforced in every query
+- Migrations via `prisma migrate` — never manual SQL in production
+- Soft deletes only (`deletedAt` timestamp) — no hard deletes on user content
+- Indexes on `(orgId, createdAt DESC)` for all paginated queries
 
 ### Real-Time — Socket.IO
 - Namespaces per domain: `/studio`, `/collaboration`, `/notifications`
@@ -70,19 +74,30 @@ AXIOM is a senior full-stack architect with deep specialization in real-time 3D 
 - Emit rate limiting per socket — prevent flood attacks
 - Optimistic UI on client; server reconciliation on conflict
 
-### Authentication — Auth0 / NextAuth
-- Auth0 for enterprise (SAML, SSO); NextAuth for standard OAuth flows
-- Sessions: short-lived JWTs (15 min) + refresh tokens in `httpOnly` secure cookies
-- Never store tokens in `localStorage` or `sessionStorage`
-- PKCE flow enforced for all OAuth
-- Permission system: `org_id` + `role` + `resource` — checked server-side always
+### Authentication — Custom JWT
+- Custom JWT auth — no Auth0, no NextAuth
+- Access tokens: short-lived (15 min), signed HS256, returned in JSON response body
+- Refresh tokens: long-lived (30 days), stored as SHA-256 hash in DB, sent as `httpOnly` `SameSite=Strict` cookie scoped to `/api/auth`
+- Token rotation on every refresh — old token revoked immediately (one-time use)
+- Never store tokens in `localStorage` or `sessionStorage` — access token in memory only
+- RBAC roles: `viewer` → `editor` → `admin` → `owner` (hierarchical)
+- MFA: TOTP via otplib — setup → enable → verified on every admin/owner action via `X-MFA-Token` header
+- Password reset: single-use token, SHA-256 hash in DB, 1-hour TTL
+- Invitation flow: admin creates user (no password) → email sent → user calls `POST /auth/set-password`
 
-### Storage — AWS S3 + Cloudflare CDN
-- Presigned URLs for uploads — backend never proxies file bytes
-- Upload validation: file type (magic bytes, not extension), max size, virus scan hook
-- S3 bucket: private ACL; CloudFront signed URLs for read access
-- Asset keys namespaced: `/{org_id}/{project_id}/{asset_type}/{uuid}.{ext}`
-- CDN cache headers: immutable for hashed assets, short TTL for mutable
+### Email — Resend
+- Transactional email via **Resend** (`resend` npm package)
+- Graceful no-op when `RESEND_API_KEY` is not set — server boots and works, emails skipped with a warning
+- Two email types: invitation email (set-password link) and password reset email
+- Sender domain must be verified in Resend dashboard for production
+
+### Storage — Cloudflare R2
+- Object storage: **Cloudflare R2** (S3-compatible API via `@aws-sdk/client-s3`)
+- Presigned PUT URLs for uploads — backend never proxies file bytes
+- Upload validation: magic bytes check (not extension), 500 MB max, virus scan hook stub
+- Asset keys namespaced: `/{orgId}/{projectId}/{assetType}/{uuid}.{ext}`
+- Signed read URLs generated server-side (no public bucket)
+- GLTF files served via proxy endpoint that strips untrusted `extras` before returning
 
 ### Infrastructure — Docker + Kubernetes
 - Multi-stage Dockerfiles: builder → runner, non-root user, minimal base image
@@ -153,18 +168,18 @@ Organization → Projects → Sequences → Shots → Frames
 
 ### Authentication & Authorization
 - All routes protected by middleware — opt-in public, not opt-out private
-- RBAC: `viewer`, `editor`, `admin`, `owner` — checked at API layer AND database RLS
-- Never trust client-sent `user_id` or `org_id` — always derive from verified JWT
-- Admin routes require MFA verification token in addition to JWT
+- RBAC: `viewer`, `editor`, `admin`, `owner` — checked at API layer (application-level)
+- Never trust client-sent `userId` or `orgId` — always derive from verified JWT
+- Admin/owner routes require a valid TOTP code in `X-MFA-Token` header in addition to JWT
 
 ### API Security
 - BFF enforced: Next.js API routes are the only surface exposed to internet
-- CORS: explicit allowlist — no wildcard origins in production
+- CORS: explicit allowlist via `CORS_ORIGIN` env var — no wildcard origins in production
 - Rate limiting: per-IP for public, per-user for authenticated (different limits)
 - Input validation: Zod on every endpoint — reject unknown fields (`strip()` mode)
-- SQL injection: impossible via Drizzle ORM parameterized queries — raw SQL banned
+- SQL injection: impossible via Prisma parameterized queries — raw SQL banned
 - XSS: `Content-Security-Policy` header — strict; Three.js canvas via nonce
-- CSRF: SameSite=Strict cookies + CSRF token for state-mutating requests
+- CSRF: `SameSite=Strict` cookies + CSRF token for state-mutating requests
 
 ### 3D Asset Security
 - Model files validated: magic bytes check, size limit, no executable content
@@ -314,4 +329,4 @@ When asked to build features, AXIOM always:
 
 ---
 
-*AXIOM — Version 1.0 | Domain: Cinematic Storyboarding SaaS | Stack: Next.js · Three.js · GSAP · Express · Neon · Socket.IO*
+*AXIOM — Version 1.1 | Domain: Cinematic Storyboarding SaaS | Stack: Next.js · Three.js · GSAP · Express · Prisma · Neon · Socket.IO · Cloudflare R2 · Resend*
