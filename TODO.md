@@ -1,7 +1,7 @@
 # AXIOM — Cinematic Storyboarding SaaS · Task Tracker
 
 > Stack: Next.js · Three.js · GSAP · Express · Neon (Prisma) · Socket.IO  
-> Last updated: 2026-04-02
+> Last updated: 2026-04-04
 
 ---
 
@@ -35,6 +35,8 @@
 - [x] Validate request payload size per-route (not just global 10MB)
 - [x] Admin routes: require MFA verification token in addition to JWT
 - [x] Audit logging: record who changed what and when (append-only log table)
+- [x] Fix TOTP security bug in `require-mfa.ts` — `verifySync` returns `{ valid: boolean }` not a boolean (any token previously passed)
+- [x] CORS `CORS_ORIGIN` env var wired to actual frontend URL (was `*`)
 
 ### 1.3 Socket.IO — Real-Time Foundation
 
@@ -65,7 +67,25 @@
 - [x] Custom middleware to emit `api_request_duration_ms` histogram
 - [x] `/metrics` endpoint (Prometheus scrape target, internal network only)
 
-### 1.6 Testing — API
+### 1.7 Auth — additonal Flows
+
+- [x] MFA enrollment: `POST /auth/mfa/setup` — generate TOTP secret + QR code (otplib v13)
+- [x] MFA enrollment: `POST /auth/mfa/enable` — verify TOTP and flip `mfaEnabled = true`
+- [x] MFA enrollment: `DELETE /auth/mfa` — disable MFA with valid TOTP code
+- [x] Forgot password: `POST /auth/forgot-password` — send reset email (anti-enumeration, always 200)
+- [x] Reset password: `POST /auth/reset-password` — single-use token, 1-hour TTL, SHA-256 hash in DB
+- [x] `PasswordResetToken` Prisma model with `usedAt` audit field and cascade delete
+- [x] User invitation email on `POST /api/users` — fire-and-forget, failure does not block response
+- [x] Schemas: `mfaTokenSchema`, `forgotPasswordSchema`, `resetPasswordSchema`
+
+### 1.8 Email Service (Resend)
+
+- [x] `email.client.ts` — lazy Resend instantiation (null when key missing, no crash on boot)
+- [x] `email.service.ts` — `sendInvitationEmail` + `sendPasswordResetEmail` with graceful no-op when unconfigured
+- [x] `RESEND_API_KEY` + `EMAIL_FROM` env vars documented in `.env`
+- [x] Swagger docs updated with all new auth endpoints (forgot-password, reset-password, MFA setup/enable/disable)
+
+### 1.9 Testing — API
 
 - [x] Unit tests: services (mock repositories)
 - [x] Unit tests: Zod schemas (valid + invalid inputs)
